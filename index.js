@@ -1,48 +1,49 @@
-const express = require('express');
-const passport = require("passport");
-var JwtStrategy = require('passport-jwt').Strategy;
-var ExtractJwt = require('passport-jwt').ExtractJwt;
-const mongoose = require('mongoose');
+const express = require("express");
+const mongoose = require("mongoose");
 const bodyparser = require("body-parser");
+const passport = require("passport");
+var PORT = process.env.PORT || 5000;
+
+//bring all routes here
+var auth = require("./routs/api/auth");
+var profile = require("./routs/api/profile");
+var questions = require("./routs/api/questions");
+
+//Mongodb authentication
+const db = require("./setup/myUrl").mongoURL;
+
+mongoose
+  .connect(db, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("Mongodb is connected");
+  })
+  .catch((err) => {
+    console.log("not connected");
+    console.log(err);
+  });
+
+//initilization
+
 const app = express();
-const authRoutes = require('./routes/api/auth');
-const profileRoutes = require('./routes/api/profile');
-const questionRoutes = require('./routes/api/question');
-const PORT = process.env.PORT || 5000;
-
-//Connecting to the DATABASE.....
-mongoose.connect("mongodb+srv://atharv:atharv123@cluster1-jkf7y.mongodb.net/test?retryWrites=true&w=majority", {
-        useUnifiedTopology: true,
-        useNewUrlParser: true,
-    })
-    .then(() => {
-        console.log('Connected successfully');
-
-    })
-    .catch(err => {
-        console.log('Not connected ' + err)
-    })
-    //Middlewares...
+app.use(
+  bodyparser.urlencoded({
+    extended: false,
+  })
+);
+app.use(bodyparser.json());
 app.use(passport.initialize());
-require('./strategies/JwtStratagy').stratagy;
+require("./strategies/jwtstratagy")(passport);
 
-app.use(bodyparser.urlencoded({
-    extended: false
-}));
-app.use(bodyparser.json())
-app.use('/api/auth', authRoutes)
-app.use('/api/profile', profileRoutes)
-app.use('/api/questions', questionRoutes)
+//routes as a  middleware
+app.use("/api/auth", auth);
+app.use("/api/profile", profile);
+app.use("/api/questions", questions);
 
+app.get("/", (req, res) => {
+  res.send("Hey big stack");
+});
 
-
-
-
-app.get('/', (req, res) => {
-        res.send("I am at home page");
-    })
-    //Listening to a port
-app.listen(PORT, () => {
-    console.log("server is running");
-
-})
+app.listen(PORT, () => console.log(`'server is listening on ${PORT}'`));

@@ -1,31 +1,25 @@
-var JwtStrategy = require('passport-jwt').Strategy;
-var ExtractJwt = require('passport-jwt').ExtractJwt;
-const passport = require('passport')
+const JwtStrategy = require("passport-jwt").Strategy;
+const ExtractJwt = require("passport-jwt").ExtractJwt;
+const mongoose = require("mongoose");
+const Person = mongoose.model("myperson");
+const mykey = require("../setup/myUrl");
 
-const Key = require('../setup/private');
-const mongoose = require('mongoose');
-// const User = require('../models/User')
-const User = mongoose.model('myuser')
-var opts = {}
+var opts = {};
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
-opts.secretOrKey = Key.secret;
-
-
-
-module.exports = {
-    stratagy: passport.use(new JwtStrategy(opts, function(jwt_payload, done) {
-        User.findOne({
-            _id: jwt_payload.id
-        }, function(err, user) {
-            if (err) {
-                return done(err, false);
-            }
-            if (user) {
-                return done(null, user);
-            } else {
-                return done(null, false);
-
-            }
+opts.secretOrKey = mykey.secret;
+module.exports = (passport) => {
+  passport.use(
+    new JwtStrategy(opts, (jwt_payload, done) => {
+      Person.findById(jwt_payload.id)
+        .then((person) => {
+          if (person) {
+            return done(null, person);
+          }
+          return done(null, false);
+        })
+        .catch((err) => {
+          console.log(err);
         });
-    }))
-}
+    })
+  );
+};
